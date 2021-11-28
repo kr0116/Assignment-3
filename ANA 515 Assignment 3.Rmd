@@ -1,0 +1,83 @@
+---
+title: "ANA 515 Assignment 3"
+author: Karthikeyan Rajendran
+date: 2021
+output: 
+html_document:
+  theme:
+    bootswatch: Darkly
+---
+
+
+```{r setup, include = FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(knitr)
+library(lubridate)
+library(stringr)
+```
+
+
+```{r, include = TRUE}
+location <- "E:/McDaniel/ANA 515/StormEvents_details-ftp_v1.0_d1994_c20210803.csv"
+storm_events <- read.csv(location)
+```
+
+```{r, include = TRUE}
+# selecting the variables 
+myvars <- c("BEGIN_DATE_TIME","END_DATE_TIME","EPISODE_ID","EVENT_ID","STATE","STATE_FIPS", "CZ_NAME","CZ_TYPE","CZ_FIPS","EVENT_TYPE","SOURCE","BEGIN_LAT","END_LAT","BEGIN_LON","END_LON")
+newdata <- storm_events[myvars]
+head(newdata)
+```
+```{r, include = TRUE}
+newdata[['BEGIN_DATE_TIME']] <- dmy_hms(newdata[['BEGIN_DATE_TIME']])
+newdata[['END_DATE_TIME']] <- dmy_hms(newdata[['END_DATE_TIME']])
+```
+
+```{r, include = TRUE}
+newdata$STATE = str_to_title(newdata$STATE, locale = "en")
+newdata$CZ_NAME = str_to_title(newdata$CZ_NAME, locale = "en")
+head(newdata)
+```
+
+```{r, include = TRUE}
+newdata1 <- newdata %>% 
+  filter(CZ_TYPE == "C")
+revised_data <- subset(newdata1, select = -c(CZ_TYPE))
+head(revised_data)
+```
+
+```{r, include = TRUE}
+str_pad(revised_data$STATE_FIPS, width=3, side = "left", pad = "0")
+str_pad(revised_data$CZ_FIPS, width=3, side = "left", pad = "0")
+revised_data$COMBINED <- paste(revised_data$STATE_FIPS, revised_data$CZ_FIPS)
+```
+
+```{r, include = TRUE}
+revised_data_lower <- revised_data %>% rename_all(tolower)
+```
+
+```{r, include = TRUE}
+us_state <-data.frame(state=state.name, region=state.region, area = state.area)
+colnames(us_state)
+```
+
+```{r, include = TRUE}
+newdata2 <- data.frame(table(revised_data_lower$state))
+newdata2 <- rename(newdata2,c("name"="Var1"))
+head(newdata2)
+```
+
+
+```{r, include = TRUE}
+us_state_lower <- us_state %>% rename_all(tolower)
+revised_state <- merge(x=newdata2,y=us_state_lower,by.x="name",by.y="state")
+head(revised_state)
+
+ggplot(revised_state, aes(x=area, y=Freq)) +
+  geom_point(aes(color = region)) +
+  labs(x="Land Area (square miles",
+       y="# of storm events in 2017")
+```
+
